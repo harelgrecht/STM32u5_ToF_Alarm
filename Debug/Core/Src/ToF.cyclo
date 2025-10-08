@@ -1,0 +1,5 @@
+../Core/Src/ToF.c:6:19:initToF	7
+../Core/Src/ToF.c:51:19:startToFSampling	3
+../Core/Src/ToF.c:63:8:readToFDistance	2
+../Core/Src/ToF.c:75:19:preformToFCalibration	1
+../Core/Src/ToF.c:84:6:performDistanceMeasurement	3

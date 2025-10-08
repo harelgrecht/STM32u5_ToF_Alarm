@@ -1,0 +1,5 @@
+../Core/Src/app_freertos.c:96:6:MX_FREERTOS_Init	1
+../Core/Src/app_freertos.c:148:6:StartDefaultTask	1
+../Core/Src/app_freertos.c:166:6:startToF	1
+../Core/Src/app_freertos.c:184:6:startAlarm	1
+../Core/Src/app_freertos.c:205:6:startLog	1

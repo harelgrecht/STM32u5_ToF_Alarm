@@ -95,7 +95,6 @@ const osMessageQueueAttr_t logQueue_attributes = {
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
-
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -187,9 +186,10 @@ void startAlarm(void *argument)
   /* Infinite loop */
   for(;;)
   {
-	BSP_LED_On(LED_RED);
-	BSP_LED_On(LED_GREEN);
-	BSP_LED_On(LED_BLUE);
+//	BSP_LED_On(LED_RED);
+//	BSP_LED_On(LED_GREEN);
+//	BSP_LED_On(LED_BLUE);
+	  BSP_LED_Toggle(LED_RED);
     osDelay(1);
   }
   /* USER CODE END alarmTask */

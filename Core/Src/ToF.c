@@ -4,6 +4,7 @@
 extern I2C_HandleTypeDef hi2c2;
 
 HAL_StatusTypeDef initToF() {
+//	printf("Initiating ToF module\n");
     HAL_StatusTypeDef ret;
     struct reg_val {
         uint8_t reg;
@@ -14,7 +15,7 @@ HAL_StatusTypeDef initToF() {
         {SAMPLE_REG, 0x71},
         {0x18, 0x22},
         {0x19, 0x22},
-        {0x60, 0x01},
+        {IRQ_REG, 0x01},
         {0x90, 0x0F},
         {0x91, 0xFF}
     };
@@ -50,11 +51,25 @@ HAL_StatusTypeDef initToF() {
 
 HAL_StatusTypeDef startToFSampling(uint8_t sampleMode, uint8_t irqMode) {
 	HAL_StatusTypeDef returnStatus;
+	uint8_t sampleRegData;
+	uint8_t irqRegData;
 
 	returnStatus = HAL_I2C_Mem_Write(&hi2c2, TOF_I2C_DEV, SAMPLE_REG, I2C_MEMADD_SIZE_8BIT, &sampleMode, 1, 100);
-	if(returnStatus != HAL_OK)
-		return HAL_ERROR;
+	if(returnStatus == HAL_OK) {
+		HAL_I2C_Mem_Read(&hi2c2, TOF_I2C_DEV, SAMPLE_REG, I2C_MEMADD_SIZE_8BIT, &sampleRegData, 1, 100);
+		if (sampleRegData == sampleMode) returnStatus = HAL_OK;
+	} else {
+		returnStatus = HAL_ERROR;
+	}
+
 	returnStatus = HAL_I2C_Mem_Write(&hi2c2, TOF_I2C_DEV, IRQ_REG, I2C_MEMADD_SIZE_8BIT, &irqMode, 1, 100);
+	if(returnStatus == HAL_OK) {
+		HAL_I2C_Mem_Read(&hi2c2, TOF_I2C_DEV, IRQ_REG, I2C_MEMADD_SIZE_8BIT, &irqRegData, 1, 100);
+		if (irqRegData == irqMode) returnStatus = HAL_OK;
+	} else {
+		returnStatus =  HAL_ERROR;
+	}
+
 	if(returnStatus != HAL_OK)
 		return HAL_ERROR;
 	return HAL_OK;
@@ -74,9 +89,9 @@ double readToFDistance() {
 
 HAL_StatusTypeDef preformToFCalibration() {
 	HAL_GPIO_WritePin(pmod_SS_GPIO_Port, pmod_SS_Pin, GPIO_PIN_HIGH);
-	HAL_Delay(5.6);
+	HAL_Delay(6);
 	HAL_GPIO_WritePin(pmod_SS_GPIO_Port, pmod_SS_Pin, GPIO_PIN_LOW);
-	HAL_Delay(14.4);
+	HAL_Delay(14);
 	return HAL_OK;
 }
 
@@ -84,10 +99,11 @@ HAL_StatusTypeDef preformToFCalibration() {
 void performDistanceMeasurement() {
 	if((startToFSampling(0x7D, 0x01)) != HAL_OK) return;
 	preformToFCalibration();
-	double distance = readToFDistance();
-	if(distance > 0) {
-		printf("distance: %d\n", distance);
-	} else {
-		printf("no distance\n");
+	while(1) {
+		double distance = readToFDistance();
+		if(distance > 0)
+			printf("distance: %lf\n", distance);
+		else
+			printf("no distance\n");
 	}
 }

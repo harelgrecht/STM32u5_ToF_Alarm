@@ -66,7 +66,7 @@ main-build: Stm32u5_ToF_Alarm.elf secondary-outputs
 
 # Tool invocations
 Stm32u5_ToF_Alarm.elf Stm32u5_ToF_Alarm.map: $(OBJS) $(USER_OBJS) /home/harel/Desktop/Projects/Stm32u5_ToF_Alarm/Stm32u5_ToF_Alarm/STM32U5A5ZJTXQ_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "Stm32u5_ToF_Alarm.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m33 -T"/home/harel/Desktop/Projects/Stm32u5_ToF_Alarm/Stm32u5_ToF_Alarm/STM32U5A5ZJTXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="Stm32u5_ToF_Alarm.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+	arm-none-eabi-gcc -o "Stm32u5_ToF_Alarm.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m33 -T"/home/harel/Desktop/Projects/Stm32u5_ToF_Alarm/Stm32u5_ToF_Alarm/STM32U5A5ZJTXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="Stm32u5_ToF_Alarm.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

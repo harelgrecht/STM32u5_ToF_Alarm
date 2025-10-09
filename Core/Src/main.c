@@ -40,7 +40,6 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-
 COM_InitTypeDef BspCOMInit;
 
 I2C_HandleTypeDef hi2c2;
@@ -99,7 +98,6 @@ int main(void)
   MX_ICACHE_Init();
   MX_I2C2_Init();
   /* USER CODE BEGIN 2 */
-
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -125,6 +123,7 @@ int main(void)
   {
     Error_Handler();
   }
+  initToF();
 
   /* Start scheduler */
   osKernelStart();
@@ -321,6 +320,12 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : PC13 */
+  GPIO_InitStruct.Pin = GPIO_PIN_13;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : pmod_SS_Pin */
   GPIO_InitStruct.Pin = pmod_SS_Pin;

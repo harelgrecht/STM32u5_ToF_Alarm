@@ -2,9 +2,11 @@
 #include "stm32u5xx_hal.h"
 
 extern I2C_HandleTypeDef hi2c2;
+extern distanceHandler_t payload;
+
 
 HAL_StatusTypeDef initToF() {
-//	printf("Initiating ToF module\n");
+	printf("Initiating ToF module\n");
     HAL_StatusTypeDef ret;
     struct reg_val {
         uint8_t reg;
@@ -82,6 +84,7 @@ double readToFDistance() {
 
 	while((HAL_GPIO_ReadPin(pmod_IRQ_GPIO_Port, pmod_IRQ_Pin)) != 0);
 	HAL_I2C_Mem_Read(&hi2c2, TOF_I2C_DEV, DIST_MSB_REG, I2C_MEMADD_SIZE_8BIT, &distanceMSB, 1, 100);
+	printf("Distance MSB: %d\n", distanceMSB);
 	HAL_I2C_Mem_Read(&hi2c2, TOF_I2C_DEV, DIST_LSB_REG, I2C_MEMADD_SIZE_8BIT, &distanceLSB, 1, 100);
     distance =(((double)distanceMSB * 256 + (double)distanceLSB)/65536) * TOF_SCALE_METERS;
     return distance;
@@ -100,9 +103,10 @@ void performDistanceMeasurement() {
 	if((startToFSampling(0x7D, 0x01)) != HAL_OK) return;
 	preformToFCalibration();
 	while(1) {
-		double distance = readToFDistance();
-		if(distance > 0)
-			printf("distance: %lf\n", distance);
+		payload.distanceCM = readToFDistance();
+		// payload.timestampMS = ; TODO take the timestamp
+		if(payload.distanceCM > 0)
+			printf("distance: %lf\n", payload.distanceCM);
 		else
 			printf("no distance\n");
 	}

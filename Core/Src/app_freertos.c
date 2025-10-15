@@ -56,13 +56,13 @@ osThreadId_t taskToFHandle;
 const osThreadAttr_t taskToF_attributes = {
   .name = "taskToF",
   .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
+  .stack_size = 1024 * 4
 };
 /* Definitions for alarmTask */
 osThreadId_t alarmTaskHandle;
 const osThreadAttr_t alarmTask_attributes = {
   .name = "alarmTask",
-  .priority = (osPriority_t) osPriorityAboveNormal,
+  .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 128 * 4
 };
 /* Definitions for logTask */

@@ -1,5 +1,5 @@
 ../Core/Src/ToF.c:8:19:initToF	40	static
 ../Core/Src/ToF.c:47:19:startToFSampling	24	static
-../Core/Src/ToF.c:76:8:readToFDistance	32	static
-../Core/Src/ToF.c:90:19:preformToFCalibration	8	static
-../Core/Src/ToF.c:99:6:performDistanceMeasurement	8	static
+../Core/Src/ToF.c:76:6:preformToFCalibration	8	static
+../Core/Src/ToF.c:83:8:readToFDistance	32	static
+../Core/Src/ToF.c:97:6:performDistanceMeasurement	16	static

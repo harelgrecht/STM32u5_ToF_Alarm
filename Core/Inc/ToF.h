@@ -39,7 +39,7 @@ typedef struct {
 
 HAL_StatusTypeDef initToF();
 void performDistanceMeasurement();
-HAL_StatusTypeDef preformToFCalibration();
+void preformToFCalibration();
 double readToFDistance();
 HAL_StatusTypeDef startToFSampling(uint8_t sampleMode, uint8_t irqMode);
 

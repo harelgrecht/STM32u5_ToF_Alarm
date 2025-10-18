@@ -73,6 +73,13 @@ HAL_StatusTypeDef startToFSampling(uint8_t sampleMode, uint8_t irqMode) {
     return HAL_OK;
 }
 
+void preformToFCalibration() {
+	HAL_GPIO_WritePin(pmod_SS_GPIO_Port, pmod_SS_Pin, GPIO_PIN_LOW);
+	delay_us(5600);
+	HAL_GPIO_WritePin(pmod_SS_GPIO_Port, pmod_SS_Pin, GPIO_PIN_HIGH);
+	delay_us(14400);
+}
+
 double readToFDistance() {
 	uint8_t distanceMSB = 0;
 	uint8_t distanceLSB = 0;
@@ -80,31 +87,22 @@ double readToFDistance() {
 
 	while((HAL_GPIO_ReadPin(pmod_IRQ_GPIO_Port, pmod_IRQ_Pin)) != 0);
 	if(i2cRead(DIST_MSB_REG, &distanceMSB) != HAL_OK) return -1;
-	printf("Distance MSB: %d\n\r", distanceMSB);
+	//printf("Distance MSB: 0x%02x\n\r", distanceMSB);
 	if(i2cRead(DIST_LSB_REG, &distanceLSB) != HAL_OK) return -1;
-	printf("Distance LSB: %d\n\r", distanceLSB);
+	//printf("Distance LSB: 0x%02x\n\r", distanceLSB);
     distance =(((double)distanceMSB * 256 + (double)distanceLSB)/65536) * TOF_SCALE_METERS;
-    return distance;
+    return distance; // measured distance in meters
 }
-
-HAL_StatusTypeDef preformToFCalibration() {
-	HAL_GPIO_WritePin(pmod_SS_GPIO_Port, pmod_SS_Pin, GPIO_PIN_LOW);
-	delay_us(5600);
-	HAL_GPIO_WritePin(pmod_SS_GPIO_Port, pmod_SS_Pin, GPIO_PIN_HIGH);
-	delay_us(14400);
-	return HAL_OK;
-}
-
 
 void performDistanceMeasurement() {
+	double distanceInMeters;
 	if((startToFSampling(0x7D, 0x01)) != HAL_OK) return;
-	preformToFCalibration();
 	while(1) {
-		payload.distanceCM = readToFDistance();
+		preformToFCalibration();
+		distanceInMeters = readToFDistance();
 //		payload.timestampMS = ; TODO take the timestamp
-//		if(payload.distanceCM > 0)
-//			printf("distance: %lf\n", payload.distanceCM);
-//		else
-//			printf("no distance\n");
+		payload.distanceCM = distanceInMeters * 100.0;
+		printf("distance: %lf\n\r", payload.distanceCM);
+
 	}
 }

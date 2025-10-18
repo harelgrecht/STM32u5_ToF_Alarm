@@ -99,7 +99,7 @@ int main(void)
   MX_ICACHE_Init();
   MX_I2C2_Init();
   /* USER CODE BEGIN 2 */
-
+  initDwt();
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -125,6 +125,8 @@ int main(void)
   {
     Error_Handler();
   }
+  scanI2C();
+
   initToF();
   /* Start scheduler */
   osKernelStart();
@@ -153,17 +155,27 @@ void SystemClock_Config(void)
 
   /** Configure the main internal regulator output voltage
   */
-  if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE4) != HAL_OK)
+  if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK)
   {
     Error_Handler();
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI;
+  RCC_OscInitStruct.MSIState = RCC_MSI_ON;
+  RCC_OscInitStruct.MSICalibrationValue = RCC_MSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_0;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
+  RCC_OscInitStruct.PLL.PLLMBOOST = RCC_PLLMBOOST_DIV4;
+  RCC_OscInitStruct.PLL.PLLM = 3;
+  RCC_OscInitStruct.PLL.PLLN = 10;
+  RCC_OscInitStruct.PLL.PLLP = 8;
+  RCC_OscInitStruct.PLL.PLLQ = 2;
+  RCC_OscInitStruct.PLL.PLLR = 1;
+  RCC_OscInitStruct.PLL.PLLRGE = RCC_PLLVCIRANGE_1;
+  RCC_OscInitStruct.PLL.PLLFRACN = 0;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -174,13 +186,13 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2
                               |RCC_CLOCKTYPE_PCLK3;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB3CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
   {
     Error_Handler();
   }
@@ -226,7 +238,7 @@ static void MX_I2C2_Init(void)
 
   /* USER CODE END I2C2_Init 1 */
   hi2c2.Instance = I2C2;
-  hi2c2.Init.Timing = 0x00303D5B;
+  hi2c2.Init.Timing = 0x30909DEC;
   hi2c2.Init.OwnAddress1 = 0;
   hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
@@ -253,7 +265,7 @@ static void MX_I2C2_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN I2C2_Init 2 */
-
+  manualI2CInit();
   /* USER CODE END I2C2_Init 2 */
 
 }
@@ -382,7 +394,63 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void manualI2CInit(void) {
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
 
+    // 1. Manually enable the clock for GPIO Port F
+    __HAL_RCC_GPIOF_CLK_ENABLE();
+
+    // 2. Manually enable the clock for the I2C2 peripheral itself
+    __HAL_RCC_I2C2_CLK_ENABLE();
+
+    // 3. Configure the I2C pins (PF0 and PF1) for Alternate Function Open-Drain
+    GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Alternate = GPIO_AF4_I2C2; // The alternate function for I2C2
+    HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
+    printf("Manual I2C init complete. Starting scan...\r\n");
+}
+
+void scanI2C(void) {
+    printf("Scanning I2C bus...\r\n");
+    HAL_StatusTypeDef res;
+    int cnt = 0;
+    for (uint16_t i = 0; i < 128; i++) {
+        // We shift the 7-bit address left by 1 for the HAL function
+        res = HAL_I2C_IsDeviceReady(&hi2c2, (uint16_t)(i << 1), 1, 10);
+        if (res == HAL_OK) {
+            printf("I2C device found at address 0x%02X\r\n", i);
+            cnt++;
+        }
+    }
+    if(cnt==0)
+    	printf("Scan completed, didnt found any devices. cnt = %d\n\r", cnt);
+    else
+    	printf("Scan completed found: %d devices\n\r", cnt);
+}
+
+void initDwt() {
+	// Enable the DWT Cycle Counter for microsecond delays
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+}
+
+void delay_us(uint32_t microseconds) {
+    uint32_t clk_cycle_start = DWT->CYCCNT;
+    uint32_t clk_cycles_to_wait = microseconds * (HAL_RCC_GetHCLKFreq() / 1000000);
+
+    while ((DWT->CYCCNT - clk_cycle_start) < clk_cycles_to_wait);
+}
+
+HAL_StatusTypeDef i2cWrite(uint8_t reg, uint8_t data) {
+	return HAL_I2C_Mem_Write(&hi2c2, TOF_I2C_DEV, reg, I2C_MEMADD_SIZE_8BIT, &data, 1, 100);
+}
+
+HAL_StatusTypeDef i2cRead(uint8_t reg, uint8_t *data) {
+	return HAL_I2C_Mem_Read(&hi2c2, TOF_I2C_DEV, reg, I2C_MEMADD_SIZE_8BIT, data, 1, 100);
+}
 /* USER CODE END 4 */
 
 /**

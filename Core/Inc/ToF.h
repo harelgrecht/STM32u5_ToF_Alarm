@@ -14,6 +14,7 @@ extern "C" {
 
 // ISL29501 Register in use
 #define DEVICE_ID_REG 0x00
+#define MASTER_CTRL_REG 0x01
 #define STATUS_REG    0x02
 #define CMD_REG       0xB0
 #define IRQ_REG       0x60

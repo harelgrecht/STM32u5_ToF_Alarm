@@ -58,7 +58,12 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+void initDwt();
+void scanI2C(void);
+void delay_us(uint32_t microseconds);
+void manualI2CInit(void);
+HAL_StatusTypeDef i2cRead(uint8_t reg, uint8_t *data);
+HAL_StatusTypeDef i2cWrite(uint8_t reg, uint8_t data);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

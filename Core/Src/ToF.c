@@ -4,12 +4,13 @@
 extern I2C_HandleTypeDef hi2c2;
 extern distanceHandler_t payload;
 
-#define DEBUG_PRINTS
 
 HAL_StatusTypeDef initToF() {
 	printf("Initiating ToF module\n\r");
     HAL_StatusTypeDef ret;
     uint8_t deviceId;
+    uint8_t deviceStatus;
+    uint8_t masterCtrl;
 
     struct reg_val {
         uint8_t reg;
@@ -26,48 +27,50 @@ HAL_StatusTypeDef initToF() {
     };
 
     for(int i = 0; i < sizeof(init_table)/sizeof(init_table[0]); i++) {
-        ret = HAL_I2C_Mem_Write(&hi2c2,
-                                TOF_I2C_DEV,
-                                init_table[i].reg,
-                                I2C_MEMADD_SIZE_8BIT,
-                                &init_table[i].val,
-                                1,
-                                100);
+        ret = i2cWrite(init_table[i].reg, init_table[i].val);
         if(ret != HAL_OK) return ret;
+
     }
 
-    ret = HAL_I2C_Mem_Read(&hi2c2, TOF_I2C_DEV, DEVICE_ID_REG, I2C_MEMADD_SIZE_8BIT, &deviceId, 1, 100);
+    ret = i2cRead(DEVICE_ID_REG, &deviceId);
     if(ret != HAL_OK) return ret;
-#ifdef DEBUG_PRINTS
-    printf("DeviceID reg 0x00: 0x%02X\n\r", deviceId);
-#endif
+    printf("DeviceID reg 0x%02X: 0x%02X\n\r", DEVICE_ID_REG, deviceId);
+
+    ret = i2cRead(MASTER_CTRL_REG, &masterCtrl);
+    printf("Device master ctrl reg 0x%02X: 0x%02X\n\r", MASTER_CTRL_REG, masterCtrl);
+
+    ret = i2cRead(STATUS_REG, &deviceStatus);
+    printf("Device status reg 0x%02X: 0x%02X\n\r", STATUS_REG, deviceStatus);
     return HAL_OK;
 }
 
 HAL_StatusTypeDef startToFSampling(uint8_t sampleMode, uint8_t irqMode) {
-	HAL_StatusTypeDef returnStatus;
-	uint8_t sampleRegData;
-	uint8_t irqRegData;
+    uint8_t readValue;
+    HAL_StatusTypeDef status;
 
-	returnStatus = HAL_I2C_Mem_Write(&hi2c2, TOF_I2C_DEV, SAMPLE_REG, I2C_MEMADD_SIZE_8BIT, &sampleMode, 1, 100);
-	if(returnStatus == HAL_OK) {
-		HAL_I2C_Mem_Read(&hi2c2, TOF_I2C_DEV, SAMPLE_REG, I2C_MEMADD_SIZE_8BIT, &sampleRegData, 1, 100);
-		if (sampleRegData == sampleMode) returnStatus = HAL_OK;
-	} else {
-		returnStatus = HAL_ERROR;
-	}
+    status = i2cWrite(SAMPLE_REG, sampleMode);
+    if (status != HAL_OK)
+        return HAL_ERROR;
 
-	returnStatus = HAL_I2C_Mem_Write(&hi2c2, TOF_I2C_DEV, IRQ_REG, I2C_MEMADD_SIZE_8BIT, &irqMode, 1, 100);
-	if(returnStatus == HAL_OK) {
-		HAL_I2C_Mem_Read(&hi2c2, TOF_I2C_DEV, IRQ_REG, I2C_MEMADD_SIZE_8BIT, &irqRegData, 1, 100);
-		if (irqRegData == irqMode) returnStatus = HAL_OK;
-	} else {
-		returnStatus =  HAL_ERROR;
-	}
+    status = i2cRead(SAMPLE_REG, &readValue);
+    if (status != HAL_OK)
+        return HAL_ERROR;
 
-	if(returnStatus != HAL_OK)
-		return HAL_ERROR;
-	return HAL_OK;
+    if (readValue != sampleMode)
+        return HAL_ERROR;
+
+    status = i2cWrite(IRQ_REG, irqMode);
+    if (status != HAL_OK)
+        return HAL_ERROR;
+
+    status = i2cRead(IRQ_REG, &readValue);
+    if (status != HAL_OK)
+        return HAL_ERROR;
+
+    if (readValue != irqMode)
+        return HAL_ERROR;
+
+    return HAL_OK;
 }
 
 double readToFDistance() {
@@ -76,23 +79,19 @@ double readToFDistance() {
 	double distance = 1;
 
 	while((HAL_GPIO_ReadPin(pmod_IRQ_GPIO_Port, pmod_IRQ_Pin)) != 0);
-	if((HAL_I2C_Mem_Read(&hi2c2, TOF_I2C_DEV, DIST_MSB_REG, I2C_MEMADD_SIZE_8BIT, &distanceMSB, 1, 100)) != HAL_OK) return -1;
-#ifdef DEBUG_PRINTS
+	if(i2cRead(DIST_MSB_REG, &distanceMSB) != HAL_OK) return -1;
 	printf("Distance MSB: %d\n\r", distanceMSB);
-#endif
-	if((HAL_I2C_Mem_Read(&hi2c2, TOF_I2C_DEV, DIST_LSB_REG, I2C_MEMADD_SIZE_8BIT, &distanceLSB, 1, 100)) != HAL_OK) return -1;
-#ifdef DEBUG_PRINTS
+	if(i2cRead(DIST_LSB_REG, &distanceLSB) != HAL_OK) return -1;
 	printf("Distance LSB: %d\n\r", distanceLSB);
-#endif
     distance =(((double)distanceMSB * 256 + (double)distanceLSB)/65536) * TOF_SCALE_METERS;
     return distance;
 }
 
 HAL_StatusTypeDef preformToFCalibration() {
-	HAL_GPIO_WritePin(pmod_SS_GPIO_Port, pmod_SS_Pin, GPIO_PIN_HIGH);
-	HAL_Delay(6);
 	HAL_GPIO_WritePin(pmod_SS_GPIO_Port, pmod_SS_Pin, GPIO_PIN_LOW);
-	HAL_Delay(14);
+	delay_us(5600);
+	HAL_GPIO_WritePin(pmod_SS_GPIO_Port, pmod_SS_Pin, GPIO_PIN_HIGH);
+	delay_us(14400);
 	return HAL_OK;
 }
 
@@ -103,13 +102,9 @@ void performDistanceMeasurement() {
 	while(1) {
 		payload.distanceCM = readToFDistance();
 //		payload.timestampMS = ; TODO take the timestamp
-		if(payload.distanceCM > 0)
-#ifdef DEBUG_PRINTS
-			printf("distance: %lf\n", payload.distanceCM);
-#endif
-		else
-#ifdef DEBUG_PRINTS
-			printf("no distance\n");
-#endif
+//		if(payload.distanceCM > 0)
+//			printf("distance: %lf\n", payload.distanceCM);
+//		else
+//			printf("no distance\n");
 	}
 }

@@ -62,7 +62,7 @@ const osThreadAttr_t taskToF_attributes = {
 osThreadId_t alarmTaskHandle;
 const osThreadAttr_t alarmTask_attributes = {
   .name = "alarmTask",
-  .priority = (osPriority_t) osPriorityNormal,
+  .priority = (osPriority_t) osPriorityAboveNormal,
   .stack_size = 128 * 4
 };
 /* Definitions for logTask */
@@ -186,10 +186,10 @@ void startAlarm(void *argument)
   /* Infinite loop */
   for(;;)
   {
-//	BSP_LED_On(LED_RED);
-//	BSP_LED_On(LED_GREEN);
-//	BSP_LED_On(LED_BLUE);
-	  BSP_LED_Toggle(LED_RED);
+	BSP_LED_On(LED_RED);
+	BSP_LED_On(LED_GREEN);
+	BSP_LED_On(LED_BLUE);
+//	  BSP_LED_Toggle(LED_RED);
     osDelay(1);
   }
   /* USER CODE END alarmTask */

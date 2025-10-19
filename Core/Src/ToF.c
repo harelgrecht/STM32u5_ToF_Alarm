@@ -3,8 +3,7 @@
 
 extern I2C_HandleTypeDef hi2c2;
 extern distanceHandler_t payload;
-
-
+extern osMessageQueueId_t alarmQueueHandle;
 
 HAL_StatusTypeDef initToF(void) {
     printf("Initializing ToF module...\n\r");
@@ -91,14 +90,10 @@ double readToFDistance(void) {
     return distanceMeters;
 }
 
+// In ToF.c
 void performDistanceMeasurement(void) {
-    if (startToFSampling(0x7D, 0x01) != HAL_OK) {
-        return;
-    }
-
     MovingAverageFilter_t distanceFilter;
     initMovingAverage(&distanceFilter);
-
     double distanceMeters;
 
     while(1) {
@@ -107,11 +102,14 @@ void performDistanceMeasurement(void) {
 
         if (distanceMeters >= 0) {
             payload.distanceCM = updateMovingAverage(&distanceFilter, distanceMeters * 100.0);
+            osMessageQueuePut(alarmQueueHandle, &payload, 0, 0);
             payload.timestampMS = HAL_GetTick();
             printf("Distance: %.2f cm\r\n", payload.distanceCM);
         } else {
             printf("Measurement failed.\r\n");
         }
+
+        osDelay(100);
     }
 }
 

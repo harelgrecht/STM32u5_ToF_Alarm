@@ -37,6 +37,7 @@ extern "C" {
 #include "stm32u5xx_nucleo.h"
 #include "ToF.h"
 #include <stdint.h>
+#include "cmsis_os2.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

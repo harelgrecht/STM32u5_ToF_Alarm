@@ -22,7 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "ToF.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -63,14 +63,14 @@ osThreadId_t alarmTaskHandle;
 const osThreadAttr_t alarmTask_attributes = {
   .name = "alarmTask",
   .priority = (osPriority_t) osPriorityAboveNormal,
-  .stack_size = 128 * 4
+  .stack_size = 1024 * 4
 };
 /* Definitions for logTask */
 osThreadId_t logTaskHandle;
 const osThreadAttr_t logTask_attributes = {
   .name = "logTask",
   .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
+  .stack_size = 1024 * 4
 };
 /* Definitions for alarmQueue */
 osMessageQueueId_t alarmQueueHandle;
@@ -109,9 +109,9 @@ void MX_FREERTOS_Init(void) {
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
   /* creation of alarmQueue */
-  alarmQueueHandle = osMessageQueueNew (16, sizeof(uint16_t), &alarmQueue_attributes);
+  alarmQueueHandle = osMessageQueueNew (16, sizeof(distanceHandler_t), &alarmQueue_attributes);
   /* creation of logQueue */
-  logQueueHandle = osMessageQueueNew (16, sizeof(uint16_t), &logQueue_attributes);
+  logQueueHandle = osMessageQueueNew (16, sizeof(distanceHandler_t), &logQueue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -165,11 +165,13 @@ void StartDefaultTask(void *argument)
 void startToF(void *argument)
 {
   /* USER CODE BEGIN taskToF */
-  /* Infinite loop */
-  for(;;) {
+	initToF();
+
+	if (startToFSampling(0x7D, 0x01) != HAL_OK) {
+		printf("Failed to start ToF sampling. Halting task.\r\n");
+  for(;;) { }
+	}
 	performDistanceMeasurement();
-    osDelay(1);
-  }
   /* USER CODE END taskToF */
 }
 
@@ -182,14 +184,25 @@ void startToF(void *argument)
 /* USER CODE END Header_startAlarm */
 void startAlarm(void *argument)
 {
-  /* USER CODE BEGIN alarmTask */
-  /* Infinite loop */
-  for(;;)
-  {
-	BSP_LED_On(LED_RED);
-	BSP_LED_On(LED_GREEN);
-	BSP_LED_On(LED_BLUE);
-    osDelay(1);
+    /* USER CODE BEGIN alarmTask */
+	distanceHandler_t receivedPayload;
+	osStatus_t status;
+	  printf("task alarm started\n\r");
+	/* Infinite loop */
+  for(;;) {
+	  status = osMessageQueueGet(alarmQueueHandle, &receivedPayload, NULL, osWaitForever);
+	  if(status == osOK) {
+		  printf("ALARM: Object is too close! Distance: %.2f cm\r\n", receivedPayload.distanceCM);
+		  if(receivedPayload.distanceCM < 10.0) {
+			  BSP_LED_Toggle(LED_RED);
+			  BSP_LED_Toggle(LED_GREEN);
+			  BSP_LED_Toggle(LED_BLUE);
+		  } else {
+			  BSP_LED_Off(LED_RED);
+	  	  	  BSP_LED_Off(LED_GREEN);
+	  	  	  BSP_LED_Off(LED_BLUE);
+		  }
+	  }
   }
   /* USER CODE END alarmTask */
 }
@@ -205,9 +218,7 @@ void startLog(void *argument)
 {
   /* USER CODE BEGIN logTask */
   /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
+  for(;;) {
   }
   /* USER CODE END logTask */
 }

@@ -125,8 +125,7 @@ int main(void)
   {
     Error_Handler();
   }
-  scanI2C();
-  initToF();
+
   /* Start scheduler */
   osKernelStart();
 

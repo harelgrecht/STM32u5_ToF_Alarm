@@ -7,41 +7,41 @@ extern "C" {
 
 #include "main.h"
 
+// ==================== I2C & Device Constants ====================
+#define TOF_ADDR_7BIT        0x57
+#define TOF_I2C_DEV          (TOF_ADDR_7BIT << 1)
 
-#define TOF_I2C_DEV  (TOF_ADDR_7BIT << 1)
+// ISL29501 Register Map (used)
+#define DEVICE_ID_REG        0x00
+#define MASTER_CTRL_REG      0x01
+#define STATUS_REG           0x02
+#define CMD_REG              0xB0
+#define IRQ_REG              0x60
+#define DIST_MSB_REG         0xD1
+#define DIST_LSB_REG         0xD2
+#define SOFT_START_REG       0x49
+#define SAMPLE_REG           0x13
 
-#define TOF_ADDR_7BIT 0x57
+// General GPIO logic levels
+#define GPIO_PIN_HIGH        1
+#define GPIO_PIN_LOW         0
 
-// ISL29501 Register in use
-#define DEVICE_ID_REG 0x00
-#define MASTER_CTRL_REG 0x01
-#define STATUS_REG    0x02
-#define CMD_REG       0xB0
-#define IRQ_REG       0x60
-#define DIST_MSB_REG  0xD1
-#define DIST_LSB_REG  0xD2
-#define SOFT_START    0x49
-#define SAMPLE_REG    0x13
+// Measurement constants
+#define TOF_SCALE_METERS     33.31
+#define TOF_OFFSET_CM        200.0   // empirical offset correction
 
-
-#define GPIO_PIN_HIGH 1
-#define GPIO_PIN_LOW 0
-
-#define TOF_SCALE_METERS 33.31
-
-
-
+// ==================== Data Types ====================
 typedef struct {
-	double distanceCM; // Distance in cm
-	uint32_t timestampMS; //time from hal_getick in ms
-}distanceHandler_t;
+    double distanceCM;      // Distance in centimeters
+    uint32_t timestampMS;   // Timestamp from HAL_GetTick()
+} distanceHandler_t;
 
-
-HAL_StatusTypeDef initToF();
-void performDistanceMeasurement();
-void preformToFCalibration();
-double readToFDistance();
+// ==================== Public APIs ====================
+HAL_StatusTypeDef initToF(void);
 HAL_StatusTypeDef startToFSampling(uint8_t sampleMode, uint8_t irqMode);
+void performToFCalibration(void);
+double readToFDistance(void);
+void performDistanceMeasurement(void);
 
 #ifdef __cplusplus
 }

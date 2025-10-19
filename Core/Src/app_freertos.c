@@ -189,7 +189,6 @@ void startAlarm(void *argument)
 	BSP_LED_On(LED_RED);
 	BSP_LED_On(LED_GREEN);
 	BSP_LED_On(LED_BLUE);
-//	  BSP_LED_Toggle(LED_RED);
     osDelay(1);
   }
   /* USER CODE END alarmTask */

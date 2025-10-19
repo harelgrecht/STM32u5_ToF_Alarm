@@ -28,7 +28,15 @@ extern "C" {
 
 // Measurement constants
 #define TOF_SCALE_METERS     33.31
-#define TOF_OFFSET_CM        200.0   // empirical offset correction
+#define TOF_OFFSET_CM        210.0   // empirical offset correction
+
+// Moving Average Filter
+#define MOVING_AVG_SIZE 5
+typedef struct {
+    double history[MOVING_AVG_SIZE];
+    int index;
+    double sum;
+} MovingAverageFilter_t;
 
 // ==================== Data Types ====================
 typedef struct {
@@ -42,6 +50,9 @@ HAL_StatusTypeDef startToFSampling(uint8_t sampleMode, uint8_t irqMode);
 void performToFCalibration(void);
 double readToFDistance(void);
 void performDistanceMeasurement(void);
+HAL_StatusTypeDef resetToF(void);
+void initMovingAverage(MovingAverageFilter_t *filter);
+double updateMovingAverage(MovingAverageFilter_t *filter, double newDistance);
 
 #ifdef __cplusplus
 }

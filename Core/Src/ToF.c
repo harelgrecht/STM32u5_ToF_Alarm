@@ -4,6 +4,8 @@
 extern I2C_HandleTypeDef hi2c2;
 extern distanceHandler_t payload;
 
+
+
 HAL_StatusTypeDef initToF(void) {
     printf("Initializing ToF module...\n\r");
 
@@ -20,6 +22,8 @@ HAL_StatusTypeDef initToF(void) {
         {0x90, 0x0F},
         {0x91, 0xFF}
     };
+
+    if(resetToF() != HAL_OK) return HAL_ERROR;
 
     HAL_StatusTypeDef ret;
     uint8_t deviceId, masterCtrl, deviceStatus;
@@ -47,6 +51,7 @@ HAL_StatusTypeDef resetToF(void) {
 	if(i2cWrite(CMD_REG, 0x49) != HAL_OK) return HAL_ERROR; // Emulates sample start pin
 	if(i2cWrite(CMD_REG, 0xD7) != HAL_OK) return HAL_ERROR; // Resets all registers
 	if(i2cWrite(CMD_REG, 0xD1) != HAL_OK) return HAL_ERROR;  // Resets internal state machine
+	return HAL_OK;
 }
 
 HAL_StatusTypeDef startToFSampling(uint8_t sampleMode, uint8_t irqMode) {
@@ -76,26 +81,59 @@ double readToFDistance(void) {
     // Wait for IRQ to go LOW = data ready
     while (HAL_GPIO_ReadPin(pmod_IRQ_GPIO_Port, pmod_IRQ_Pin) != GPIO_PIN_LOW);
     if (i2cRead(DIST_MSB_REG, &distanceMsb) != HAL_OK) return -1;
-    printf("distanceMSB: 0x%02x\n\r", distanceMsb);
+//    printf("distanceMSB: 0x%02x\n\r", distanceMsb);
     if (i2cRead(DIST_LSB_REG, &distanceLsb) != HAL_OK) return -1;
-    printf("distanceLSB: 0x%02x\n\r", distanceLsb);
+//    printf("distanceLSB: 0x%02x\n\r", distanceLsb);
     distanceMeters = (((double)distanceMsb * 256 + (double)distanceLsb) / 65536) * TOF_SCALE_METERS;
-//    distanceMeters -= (TOF_OFFSET_CM / 100.0);
-//    if (distanceMeters < 0) distanceMeters = 0;
+    distanceMeters -= (TOF_OFFSET_CM / 100.0);
+    if (distanceMeters < 0) distanceMeters = 0;
 
     return distanceMeters;
 }
 
 void performDistanceMeasurement(void) {
-    if (startToFSampling(0x7D, 0x01) != HAL_OK) return;
+    if (startToFSampling(0x7D, 0x01) != HAL_OK) {
+        return;
+    }
 
-    while(1){
+    MovingAverageFilter_t distanceFilter;
+    initMovingAverage(&distanceFilter);
+
+    double distanceMeters;
+
+    while(1) {
         performToFCalibration();
-        double distanceMeters = readToFDistance();
-        if(distanceMeters == -1) return;
-        payload.timestampMS = HAL_GetTick();
-        payload.distanceCM  = distanceMeters * 100.0;
+        distanceMeters = readToFDistance();
 
-        printf("Distance: %.2f cm\n\r", payload.distanceCM);
+        if (distanceMeters >= 0) {
+            payload.distanceCM = updateMovingAverage(&distanceFilter, distanceMeters * 100.0);
+            payload.timestampMS = HAL_GetTick();
+            printf("Distance: %.2f cm\r\n", payload.distanceCM);
+        } else {
+            printf("Measurement failed.\r\n");
+        }
     }
 }
+
+void initMovingAverage(MovingAverageFilter_t *filter) {
+    for(int i = 0; i < MOVING_AVG_SIZE; ++i) {
+        filter->history[i] = 0.0;
+    }
+    filter->index = 0;
+    filter->sum = 0;
+}
+
+double updateMovingAverage(MovingAverageFilter_t *filter, double newDistance) {
+    filter->sum -= filter->history[filter->index];
+    filter->history[filter->index] = newDistance;
+    filter->sum += filter->history[filter->index];
+
+    filter->index++;
+    if (filter->index >= MOVING_AVG_SIZE) {
+        filter->index = 0;
+    }
+
+    return filter->sum / MOVING_AVG_SIZE;
+}
+
+

@@ -1,0 +1,25 @@
+# STM32CubeIDE project files
+.project
+.cproject
+.mxproject
+*.launch
+
+# IDE-specific settings
+.settings/
+
+# Build folders
+Debug/
+Release/
+build/
+
+# User-specific files
+*.user
+*.su
+
+# Generated files
+*.o
+*.d
+*.map
+*.elf
+*.list
+*.cyclo

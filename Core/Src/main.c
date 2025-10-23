@@ -45,6 +45,8 @@ COM_InitTypeDef BspCOMInit;
 
 I2C_HandleTypeDef hi2c2;
 
+RTC_HandleTypeDef hrtc;
+
 /* USER CODE BEGIN PV */
 /* USER CODE END PV */
 
@@ -55,6 +57,7 @@ void MX_FREERTOS_Init(void);
 static void MX_GPIO_Init(void);
 static void MX_ICACHE_Init(void);
 static void MX_I2C2_Init(void);
+static void MX_RTC_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -97,8 +100,8 @@ int main(void)
   MX_GPIO_Init();
   MX_ICACHE_Init();
   MX_I2C2_Init();
+  MX_RTC_Init();
   /* USER CODE BEGIN 2 */
-  initDwt();
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -159,10 +162,12 @@ void SystemClock_Config(void)
 
   /** Initializes the CPU, AHB and APB buses clocks
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_MSI;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.MSIState = RCC_MSI_ON;
   RCC_OscInitStruct.MSICalibrationValue = RCC_MSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_0;
+  RCC_OscInitStruct.LSIDiv = RCC_LSI_DIV1;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
   RCC_OscInitStruct.PLL.PLLMBOOST = RCC_PLLMBOOST_DIV4;
@@ -299,6 +304,81 @@ static void MX_ICACHE_Init(void)
 }
 
 /**
+  * @brief RTC Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_RTC_Init(void)
+{
+
+  /* USER CODE BEGIN RTC_Init 0 */
+
+  /* USER CODE END RTC_Init 0 */
+
+  RTC_PrivilegeStateTypeDef privilegeState = {0};
+  RTC_TimeTypeDef sTime = {0};
+  RTC_DateTypeDef sDate = {0};
+
+  /* USER CODE BEGIN RTC_Init 1 */
+
+  /* USER CODE END RTC_Init 1 */
+
+  /** Initialize RTC Only
+  */
+  hrtc.Instance = RTC;
+  hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
+  hrtc.Init.AsynchPrediv = 127;
+  hrtc.Init.SynchPrediv = 255;
+  hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
+  hrtc.Init.OutPutRemap = RTC_OUTPUT_REMAP_NONE;
+  hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
+  hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
+  hrtc.Init.OutPutPullUp = RTC_OUTPUT_PULLUP_NONE;
+  hrtc.Init.BinMode = RTC_BINARY_NONE;
+  if (HAL_RTC_Init(&hrtc) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  privilegeState.rtcPrivilegeFull = RTC_PRIVILEGE_FULL_NO;
+  privilegeState.backupRegisterPrivZone = RTC_PRIVILEGE_BKUP_ZONE_NONE;
+  privilegeState.backupRegisterStartZone2 = RTC_BKP_DR0;
+  privilegeState.backupRegisterStartZone3 = RTC_BKP_DR0;
+  if (HAL_RTCEx_PrivilegeModeSet(&hrtc, &privilegeState) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /* USER CODE BEGIN Check_RTC_BKUP */
+
+  /* USER CODE END Check_RTC_BKUP */
+
+  /** Initialize RTC and set the Time and Date
+  */
+//  sTime.Hours = 0x12;
+//  sTime.Minutes = 0x24;
+//  sTime.Seconds = 0x0;
+//  sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+//  sTime.StoreOperation = RTC_STOREOPERATION_RESET;
+//  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//  sDate.WeekDay = RTC_WEEKDAY_THURSDAY;
+//  sDate.Month = RTC_MONTH_OCTOBER;
+//  sDate.Date = 0x24;
+//  sDate.Year = 0x25;
+//
+//  if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+  /* USER CODE BEGIN RTC_Init 2 */
+
+  /* USER CODE END RTC_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -390,56 +470,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void manualI2CInit(void) {
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-    // 1. Manually enable the clock for GPIO Port F
-    __HAL_RCC_GPIOF_CLK_ENABLE();
-
-    // 2. Manually enable the clock for the I2C2 peripheral itself
-    __HAL_RCC_I2C2_CLK_ENABLE();
-
-    // 3. Configure the I2C pins (PF0 and PF1) for Alternate Function Open-Drain
-    GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF4_I2C2; // The alternate function for I2C2
-    HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
-    printf("Manual I2C init complete. Starting scan...\r\n");
-}
-
-void scanI2C(void) {
-    printf("Scanning I2C bus...\r\n");
-    HAL_StatusTypeDef res;
-    int cnt = 0;
-    for (uint16_t i = 0; i < 128; i++) {
-        // We shift the 7-bit address left by 1 for the HAL function
-        res = HAL_I2C_IsDeviceReady(&hi2c2, (uint16_t)(i << 1), 1, 10);
-        if (res == HAL_OK) {
-            printf("I2C device found at address 0x%02X\r\n", i);
-            cnt++;
-        }
-    }
-    if(cnt==0)
-    	printf("Scan completed, didnt found any devices. cnt = %d\n\r", cnt);
-    else
-    	printf("Scan completed found: %d devices\n\r", cnt);
-}
-
-void initDwt() {
-	// Enable the DWT Cycle Counter for microsecond delays
-    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-}
-
-void delay_us(uint32_t microseconds) {
-    uint32_t clk_cycle_start = DWT->CYCCNT;
-    uint32_t clk_cycles_to_wait = microseconds * (HAL_RCC_GetHCLKFreq() / 1000000);
-
-    while ((DWT->CYCCNT - clk_cycle_start) < clk_cycles_to_wait);
-}
-
 HAL_StatusTypeDef i2cWrite(uint8_t reg, uint8_t data) {
 	return HAL_I2C_Mem_Write(&hi2c2, TOF_I2C_DEV, reg, I2C_MEMADD_SIZE_8BIT, &data, 1, 100);
 }

@@ -42,7 +42,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-
+extern RTC_HandleTypeDef hrtc;
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -166,8 +166,9 @@ void startToF(void *argument)
 		performToFCalibration();
 		distanceMeters = readToFDistance();
 		if (distanceMeters >= 0) {
+			HAL_RTC_GetTime(&hrtc, &localPayload.time, RTC_FORMAT_BCD);
+			HAL_RTC_GetDate(&hrtc, &localPayload.date, RTC_FORMAT_BCD);
 			localPayload.distanceCM = updateMovingAverage(&distanceFilter, distanceMeters * 100.0);
-			localPayload.timestampMS = HAL_GetTick();
 			osMessageQueuePut(alarmQueueHandle, &localPayload, 0, 0);
 		} else {
 			printf("Measurement failed.\r\n");
@@ -195,7 +196,15 @@ void startAlarm(void *argument)
 	for(;;) {
 		status = osMessageQueueGet(alarmQueueHandle, &receivedPayload, NULL, osWaitForever);
 		if(status == osOK) {
-			printf("Distance: %.2f cm | timestamp: %lu ms\n\r", receivedPayload.distanceCM, receivedPayload.timestampMS);
+			printf("Distance: %.2f cm | %02X/%02X/20%02X %02X:%02X:%02X\n\r",
+			           receivedPayload.distanceCM,
+			           receivedPayload.date.Date,    // Day
+			           receivedPayload.date.Month,   // Month
+			           receivedPayload.date.Year,    // Year (00-99)
+			           receivedPayload.time.Hours,   // Hours
+			           receivedPayload.time.Minutes, // Minutes
+			           receivedPayload.time.Seconds  // Seconds
+			    );
 			if(receivedPayload.distanceCM < 10.0) {
 				printf("ALARM: Object is too close! Distance: %.2f cm\r\n", receivedPayload.distanceCM);
 				blinkLed();

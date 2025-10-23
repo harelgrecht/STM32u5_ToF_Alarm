@@ -46,7 +46,6 @@ COM_InitTypeDef BspCOMInit;
 I2C_HandleTypeDef hi2c2;
 
 /* USER CODE BEGIN PV */
-distanceHandler_t payload;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/

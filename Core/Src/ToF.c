@@ -2,7 +2,6 @@
 #include "stm32u5xx_hal.h"
 
 extern I2C_HandleTypeDef hi2c2;
-extern distanceHandler_t payload;
 extern osMessageQueueId_t alarmQueueHandle;
 
 HAL_StatusTypeDef initToF(void) {
@@ -80,37 +79,12 @@ double readToFDistance(void) {
     // Wait for IRQ to go LOW = data ready
     while (HAL_GPIO_ReadPin(pmod_IRQ_GPIO_Port, pmod_IRQ_Pin) != GPIO_PIN_LOW);
     if (i2cRead(DIST_MSB_REG, &distanceMsb) != HAL_OK) return -1;
-//    printf("distanceMSB: 0x%02x\n\r", distanceMsb);
     if (i2cRead(DIST_LSB_REG, &distanceLsb) != HAL_OK) return -1;
-//    printf("distanceLSB: 0x%02x\n\r", distanceLsb);
     distanceMeters = (((double)distanceMsb * 256 + (double)distanceLsb) / 65536) * TOF_SCALE_METERS;
     distanceMeters -= (TOF_OFFSET_CM / 100.0);
     if (distanceMeters < 0) distanceMeters = 0;
 
     return distanceMeters;
-}
-
-// In ToF.c
-void performDistanceMeasurement(void) {
-    MovingAverageFilter_t distanceFilter;
-    initMovingAverage(&distanceFilter);
-    double distanceMeters;
-
-    while(1) {
-        performToFCalibration();
-        distanceMeters = readToFDistance();
-
-        if (distanceMeters >= 0) {
-            payload.distanceCM = updateMovingAverage(&distanceFilter, distanceMeters * 100.0);
-            osMessageQueuePut(alarmQueueHandle, &payload, 0, 0);
-            payload.timestampMS = HAL_GetTick();
-            printf("Distance: %.2f cm\r\n", payload.distanceCM);
-        } else {
-            printf("Measurement failed.\r\n");
-        }
-
-        osDelay(100);
-    }
 }
 
 void initMovingAverage(MovingAverageFilter_t *filter) {

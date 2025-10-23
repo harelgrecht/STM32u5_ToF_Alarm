@@ -57,9 +57,7 @@ extern "C" {
 extern osThreadId_t defaultTaskHandle;
 extern osThreadId_t taskToFHandle;
 extern osThreadId_t alarmTaskHandle;
-extern osThreadId_t logTaskHandle;
 extern osMessageQueueId_t alarmQueueHandle;
-extern osMessageQueueId_t logQueueHandle;
 
 /* Exported function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -69,7 +67,6 @@ extern osMessageQueueId_t logQueueHandle;
 void StartDefaultTask(void *argument);
 void startToF(void *argument);
 void startAlarm(void *argument);
-void startLog(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 

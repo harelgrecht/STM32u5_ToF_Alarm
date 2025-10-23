@@ -11,14 +11,15 @@ HAL_StatusTypeDef initToF(void) {
         uint8_t reg;
         uint8_t val;
     } initTable[] = {
-        {0x10, 0x04},
-        {0x11, 0x6E},
+    	// Taken as is from datasheet
+        {INTEGRATION_PERIOD_REG, 0x04},
+        {SAMPLE_PERIOD_REG, 0x6E},
         {SAMPLE_REG, 0x71},
         {0x18, 0x22},
-        {0x19, 0x22},
+        {AGC_CONTROL_REG, 0x22},
         {IRQ_REG, 0x01},
-        {0x90, 0x0F},
-        {0x91, 0xFF}
+        {DRIVER_RANGE_REG, 0x0F},
+        {EMITTER_DAC_REG, 0xFF}
     };
 
     if(resetToF() != HAL_OK) return HAL_ERROR;
@@ -66,10 +67,8 @@ HAL_StatusTypeDef startToFSampling(uint8_t sampleMode, uint8_t irqMode) {
 
 void performToFCalibration(void) {
     HAL_GPIO_WritePin(pmod_SS_GPIO_Port, pmod_SS_Pin, GPIO_PIN_LOW);
-//    delay_us(5600);
 	osDelay(6);
     HAL_GPIO_WritePin(pmod_SS_GPIO_Port, pmod_SS_Pin, GPIO_PIN_HIGH);
-//    delay_us(14400);
     osDelay(15);
 }
 
@@ -79,9 +78,7 @@ double readToFDistance(void) {
     double distanceMeters = 1;
 
     // Wait for IRQ to go LOW = data ready
-    while (HAL_GPIO_ReadPin(pmod_IRQ_GPIO_Port, pmod_IRQ_Pin) != GPIO_PIN_LOW) {
-    	osDelay(1);
-    }
+    while (HAL_GPIO_ReadPin(pmod_IRQ_GPIO_Port, pmod_IRQ_Pin) != GPIO_PIN_LOW);
     if (i2cRead(DIST_MSB_REG, &distanceMsb) != HAL_OK) return -1;
     if (i2cRead(DIST_LSB_REG, &distanceLsb) != HAL_OK) return -1;
     distanceMeters = (((double)distanceMsb * 256 + (double)distanceLsb) / 65536) * TOF_SCALE_METERS;

@@ -21,6 +21,12 @@ extern "C" {
 #define DIST_LSB_REG         0xD2
 #define SOFT_START_REG       0x49
 #define SAMPLE_REG           0x13
+#define INTEGRATION_PERIOD_REG 0x10
+#define SAMPLE_PERIOD_REG 0x11
+#define AGC_CONTROL_REG 0x19
+#define DRIVER_RANGE_REG 0x90
+#define EMITTER_DAC_REG 0x91
+
 
 // General GPIO logic levels
 #define GPIO_PIN_HIGH        1

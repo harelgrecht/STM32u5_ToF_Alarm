@@ -216,7 +216,7 @@ void blinkLed() {
 	BSP_LED_On(LED_RED);
 	BSP_LED_On(LED_GREEN);
 	BSP_LED_On(LED_BLUE);
-	osDelay(500);
+	osDelay(500); // ms
 	BSP_LED_Off(LED_RED);
 	BSP_LED_Off(LED_GREEN);
 	BSP_LED_Off(LED_BLUE);

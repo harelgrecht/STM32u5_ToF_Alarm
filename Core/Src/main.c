@@ -262,7 +262,6 @@ static void MX_I2C2_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN I2C2_Init 2 */
-  manualI2CInit();
   /* USER CODE END I2C2_Init 2 */
 
 }
@@ -347,7 +346,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin : pmod_IRQ_Pin */
   GPIO_InitStruct.Pin = pmod_IRQ_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(pmod_IRQ_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PA2 PA3 */

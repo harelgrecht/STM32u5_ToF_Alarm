@@ -61,7 +61,7 @@ extern osMessageQueueId_t alarmQueueHandle;
 
 /* Exported function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
-
+void blinkLed();
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);

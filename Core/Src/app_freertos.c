@@ -62,7 +62,7 @@ const osThreadAttr_t taskToF_attributes = {
 osThreadId_t alarmTaskHandle;
 const osThreadAttr_t alarmTask_attributes = {
   .name = "alarmTask",
-  .priority = (osPriority_t) osPriorityAboveNormal,
+  .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 1024 * 4
 };
 /* Definitions for alarmQueue */
@@ -145,7 +145,8 @@ void StartDefaultTask(void *argument)
 * @retval None
 */
 /* USER CODE END Header_startToF */
-void startToF(void *argument) {
+void startToF(void *argument)
+{
   /* USER CODE BEGIN taskToF */
 	initToF();
 
@@ -160,6 +161,7 @@ void startToF(void *argument) {
 	initMovingAverage(&distanceFilter);
 	double distanceMeters;
 
+	/* Infinite loop */
 	for(;;) {
 		performToFCalibration();
 		distanceMeters = readToFDistance();
@@ -182,33 +184,43 @@ void startToF(void *argument) {
 * @retval None
 */
 /* USER CODE END Header_startAlarm */
-void startAlarm(void *argument) {
+void startAlarm(void *argument)
+{
   /* USER CODE BEGIN alarmTask */
 	printf("task alarm started\n\r");
+	osDelay(1);
 	distanceHandler_t receivedPayload;
 	osStatus_t status;
 	/* Infinite loop */
 	for(;;) {
-	  status = osMessageQueueGet(alarmQueueHandle, &receivedPayload, NULL, osWaitForever);
-	  if(status == osOK) {
-		  printf("Distance: %.2f cm | timestamp: %lu ms\n\r", receivedPayload.distanceCM, receivedPayload.timestampMS);
-		  if(receivedPayload.distanceCM < 10.0) {
-			  printf("ALARM: Object is too close! Distance: %.2f cm\r\n", receivedPayload.distanceCM);
-			  BSP_LED_Toggle(LED_RED);
-			  BSP_LED_Toggle(LED_GREEN);
-			  BSP_LED_Toggle(LED_BLUE);
-		  } else {
-			  BSP_LED_Off(LED_RED);
-	  	  	  BSP_LED_Off(LED_GREEN);
-	  	  	  BSP_LED_Off(LED_BLUE);
-		  }
-	  }
-  }
+		status = osMessageQueueGet(alarmQueueHandle, &receivedPayload, NULL, osWaitForever);
+		if(status == osOK) {
+			printf("Distance: %.2f cm | timestamp: %lu ms\n\r", receivedPayload.distanceCM, receivedPayload.timestampMS);
+			if(receivedPayload.distanceCM < 10.0) {
+				printf("ALARM: Object is too close! Distance: %.2f cm\r\n", receivedPayload.distanceCM);
+				blinkLed();
+			} else {
+				BSP_LED_Off(LED_RED);
+				BSP_LED_Off(LED_GREEN);
+				BSP_LED_Off(LED_BLUE);
+			}
+		}
+	}
+	osDelay(1);
   /* USER CODE END alarmTask */
 }
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
-
+void blinkLed() {
+	BSP_LED_On(LED_RED);
+	BSP_LED_On(LED_GREEN);
+	BSP_LED_On(LED_BLUE);
+	osDelay(500);
+	BSP_LED_Off(LED_RED);
+	BSP_LED_Off(LED_GREEN);
+	BSP_LED_Off(LED_BLUE);
+	osDelay(500);
+}
 /* USER CODE END Application */
 

@@ -57,6 +57,7 @@ extern "C" {
 extern osThreadId_t defaultTaskHandle;
 extern osThreadId_t taskToFHandle;
 extern osThreadId_t alarmTaskHandle;
+extern osMutexId_t alarmMutexHandle;
 extern osMessageQueueId_t alarmQueueHandle;
 
 /* Exported function prototypes -----------------------------------------------*/

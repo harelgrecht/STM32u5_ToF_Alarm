@@ -302,6 +302,7 @@ VP_SYS_VS_tim6.Signal=SYS_VS_tim6
 board=NUCLEO-U5A5ZJ-Q
 boardIOC=true
 rtos.0.ip=STMicroelectronics.X-CUBE-FREERTOS.1.3.1
+rtos.0.mutexes.0=allocationType,Dynamic;controlBlockName,NULL;name,alarmMutex
 rtos.0.queues.0=allocationType,Dynamic;bufferName,NULL;controlBlockName,NULL;itemNumber,16;itemSize,distanceHandler_t;name,alarmQueue
 rtos.0.tasks.0=allocationType,Dynamic;bufferName,NULL;codeGen,Default;controlBlockName,NULL;entry,StartDefaultTask;name,defaultTask;parameter,NULL;priority,osPriorityNormal;stackSize,128
 rtos.0.tasks.1=allocationType,Dynamic;bufferName,NULL;codeGen,Default;controlBlockName,NULL;entry,startToF;name,taskToF;parameter,NULL;priority,osPriorityNormal;stackSize,1024

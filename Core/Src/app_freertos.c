@@ -32,7 +32,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+distanceHandler_t globalPayload;
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -65,6 +65,11 @@ const osThreadAttr_t alarmTask_attributes = {
   .priority = (osPriority_t) osPriorityAboveNormal,
   .stack_size = 1024 * 4
 };
+/* Definitions for alarmMutex */
+osMutexId_t alarmMutexHandle;
+const osMutexAttr_t alarmMutex_attributes = {
+  .name = "alarmMutex"
+};
 /* Definitions for alarmQueue */
 osMessageQueueId_t alarmQueueHandle;
 const osMessageQueueAttr_t alarmQueue_attributes = {
@@ -84,6 +89,8 @@ const osMessageQueueAttr_t alarmQueue_attributes = {
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
   /* USER CODE END Init */
+  /* creation of alarmMutex */
+  alarmMutexHandle = osMutexNew(&alarmMutex_attributes);
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -156,7 +163,7 @@ void startToF(void *argument)
 			osDelay(osWaitForever);
 	}
 
-	distanceHandler_t localPayload;
+//	distanceHandler_t localPayload;
 	MovingAverageFilter_t distanceFilter;
 	initMovingAverage(&distanceFilter);
 	double distanceMeters;
@@ -166,11 +173,13 @@ void startToF(void *argument)
 		performToFCalibration();
 		distanceMeters = readToFDistance();
 		if (distanceMeters >= 0) {
-			localPayload.upTimeStamp = HAL_GetTick();
-			localPayload.distanceCM = updateMovingAverage(&distanceFilter, distanceMeters * 100.0);
-			osMessageQueuePut(alarmQueueHandle, &localPayload, 0, 0);
-		} else {
-			printf("Measurement failed.\r\n");
+			if(osMutexAcquire(alarmMutexHandle, 10) == osOK) {
+				globalPayload.upTimeStamp = HAL_GetTick();
+				globalPayload.distanceCM = updateMovingAverage(&distanceFilter, distanceMeters * 100.0);
+				osMutexRelease(alarmMutexHandle);
+			} else {
+				printf("Measurement failed.\r\n");
+			}
 		}
 		osDelay(100);
 	}
@@ -188,25 +197,36 @@ void startAlarm(void *argument)
 {
   /* USER CODE BEGIN alarmTask */
 	printf("task alarm started\n\r");
-	osDelay(1);
-	distanceHandler_t receivedPayload;
-	osStatus_t status;
+	distanceHandler_t alarmTaskPayload;
 	uint32_t hours, minutes, seconds;
+	int slowBlinkCnt = 0;
 	/* Infinite loop */
 	for(;;) {
-		status = osMessageQueueGet(alarmQueueHandle, &receivedPayload, NULL, osWaitForever);
-		if(status == osOK) {
-			calcUptime(receivedPayload.upTimeStamp, &hours, &minutes, &seconds);
-			if(receivedPayload.distanceCM < 10.0) {
+		if(osMutexAcquire(alarmMutexHandle, 10) == osOK) {
+			alarmTaskPayload = globalPayload;
+			osMutexRelease(alarmMutexHandle);
+
+			calcUptime(alarmTaskPayload.upTimeStamp, &hours, &minutes, &seconds);
+			printf("Distance: %.2f cm |  Uptime: %02lu:%02lu:%02lu\n\r", alarmTaskPayload.distanceCM, hours, minutes, seconds);
+			if(alarmTaskPayload.distanceCM < 10.0) {
 				printf("ALARM: Object is too close!\n\r");
 				blinkLed();
+				slowBlinkCnt = 0;
+			} else if(alarmTaskPayload.distanceCM < 30.0) {
+				slowBlinkCnt++;
+				if(slowBlinkCnt >= 10) {
+					BSP_LED_Toggle(LED_BLUE);
+					slowBlinkCnt = 0;
+				}
+				BSP_LED_Off(LED_RED);
 			} else {
-				printf("Distance: %.2f cm |  Uptime: %02lu:%02lu:%02lu\n\r", receivedPayload.distanceCM, hours, minutes, seconds);
 				BSP_LED_Off(LED_RED);
 				BSP_LED_Off(LED_GREEN);
 				BSP_LED_Off(LED_BLUE);
+				slowBlinkCnt = 0;
 			}
 		}
+		osDelay(50);
 	}
   /* USER CODE END alarmTask */
 }

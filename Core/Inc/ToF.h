@@ -47,8 +47,7 @@ typedef struct {
 // ==================== Data Types ====================
 typedef struct {
     double distanceCM;      // Distance in centimeters
-    RTC_TimeTypeDef time;
-    RTC_DateTypeDef date;
+    double upTimeStamp; //timestamp sice boot in hh:mm::ss format
 } distanceHandler_t;
 
 // ==================== Public APIs ====================

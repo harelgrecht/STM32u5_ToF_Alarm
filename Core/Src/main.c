@@ -354,24 +354,24 @@ static void MX_RTC_Init(void)
 
   /** Initialize RTC and set the Time and Date
   */
-//  sTime.Hours = 0x12;
-//  sTime.Minutes = 0x24;
-//  sTime.Seconds = 0x0;
-//  sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
-//  sTime.StoreOperation = RTC_STOREOPERATION_RESET;
-//  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//  sDate.WeekDay = RTC_WEEKDAY_THURSDAY;
-//  sDate.Month = RTC_MONTH_OCTOBER;
-//  sDate.Date = 0x24;
-//  sDate.Year = 0x25;
-//
-//  if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
+  sTime.Hours = 14;
+  sTime.Minutes = 13;
+  sTime.Seconds = 0;
+  sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+  sTime.StoreOperation = RTC_STOREOPERATION_RESET;
+  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sDate.WeekDay = RTC_WEEKDAY_THURSDAY;
+  sDate.Month = RTC_MONTH_OCTOBER;
+  sDate.Date = 24;
+  sDate.Year = 25;
+
+  if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE BEGIN RTC_Init 2 */
 
   /* USER CODE END RTC_Init 2 */

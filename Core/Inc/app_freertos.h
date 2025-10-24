@@ -62,6 +62,7 @@ extern osMessageQueueId_t alarmQueueHandle;
 /* Exported function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
 void blinkLed();
+void calcUptime(distanceHandler_t payload, uint32_t *hh, uint32_t *mm, uint32_t *ss);
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);

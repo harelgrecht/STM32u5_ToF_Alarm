@@ -166,8 +166,7 @@ void startToF(void *argument)
 		performToFCalibration();
 		distanceMeters = readToFDistance();
 		if (distanceMeters >= 0) {
-			HAL_RTC_GetTime(&hrtc, &localPayload.time, RTC_FORMAT_BCD);
-			HAL_RTC_GetDate(&hrtc, &localPayload.date, RTC_FORMAT_BCD);
+			localPayload.upTimeStamp = HAL_GetTick();
 			localPayload.distanceCM = updateMovingAverage(&distanceFilter, distanceMeters * 100.0);
 			osMessageQueuePut(alarmQueueHandle, &localPayload, 0, 0);
 		} else {
@@ -192,23 +191,17 @@ void startAlarm(void *argument)
 	osDelay(1);
 	distanceHandler_t receivedPayload;
 	osStatus_t status;
+	uint32_t hours, minutes, seconds;
 	/* Infinite loop */
 	for(;;) {
 		status = osMessageQueueGet(alarmQueueHandle, &receivedPayload, NULL, osWaitForever);
 		if(status == osOK) {
-			printf("Distance: %.2f cm | %02X/%02X/20%02X %02X:%02X:%02X\n\r",
-			           receivedPayload.distanceCM,
-			           receivedPayload.date.Date,    // Day
-			           receivedPayload.date.Month,   // Month
-			           receivedPayload.date.Year,    // Year (00-99)
-			           receivedPayload.time.Hours,   // Hours
-			           receivedPayload.time.Minutes, // Minutes
-			           receivedPayload.time.Seconds  // Seconds
-			    );
+			calcUptime(receivedPayload, &hours, &minutes, &seconds);
 			if(receivedPayload.distanceCM < 10.0) {
-				printf("ALARM: Object is too close! Distance: %.2f cm\r\n", receivedPayload.distanceCM);
+				printf("ALARM: Object is too close! Distance: %.2f cm\n\r", receivedPayload.distanceCM);
 				blinkLed();
 			} else {
+				printf("Distance: %.2f cm |  Uptime: %02lu:%02lu:%02lu\n\r", receivedPayload.distanceCM, hours, minutes, seconds);
 				BSP_LED_Off(LED_RED);
 				BSP_LED_Off(LED_GREEN);
 				BSP_LED_Off(LED_BLUE);
@@ -230,6 +223,13 @@ void blinkLed() {
 	BSP_LED_Off(LED_GREEN);
 	BSP_LED_Off(LED_BLUE);
 	osDelay(500);
+}
+
+void calcUptime(distanceHandler_t payload, uint32_t *hh, uint32_t *mm, uint32_t *ss) {
+	uint32_t totalSeconds = payload.upTimeStamp / 1000;
+	*hh = totalSeconds / 3600;
+	*mm = (totalSeconds % 3600) / 60;
+	*ss = totalSeconds % 60;
 }
 /* USER CODE END Application */
 

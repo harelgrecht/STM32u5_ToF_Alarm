@@ -62,7 +62,7 @@ const osThreadAttr_t taskToF_attributes = {
 osThreadId_t alarmTaskHandle;
 const osThreadAttr_t alarmTask_attributes = {
   .name = "alarmTask",
-  .priority = (osPriority_t) osPriorityNormal,
+  .priority = (osPriority_t) osPriorityAboveNormal,
   .stack_size = 1024 * 4
 };
 /* Definitions for alarmQueue */
@@ -196,9 +196,9 @@ void startAlarm(void *argument)
 	for(;;) {
 		status = osMessageQueueGet(alarmQueueHandle, &receivedPayload, NULL, osWaitForever);
 		if(status == osOK) {
-			calcUptime(receivedPayload, &hours, &minutes, &seconds);
+			calcUptime(receivedPayload.upTimeStamp, &hours, &minutes, &seconds);
 			if(receivedPayload.distanceCM < 10.0) {
-				printf("ALARM: Object is too close! Distance: %.2f cm\n\r", receivedPayload.distanceCM);
+				printf("ALARM: Object is too close!\n\r");
 				blinkLed();
 			} else {
 				printf("Distance: %.2f cm |  Uptime: %02lu:%02lu:%02lu\n\r", receivedPayload.distanceCM, hours, minutes, seconds);
@@ -208,7 +208,6 @@ void startAlarm(void *argument)
 			}
 		}
 	}
-	osDelay(1);
   /* USER CODE END alarmTask */
 }
 
@@ -225,8 +224,8 @@ void blinkLed() {
 	osDelay(500);
 }
 
-void calcUptime(distanceHandler_t payload, uint32_t *hh, uint32_t *mm, uint32_t *ss) {
-	uint32_t totalSeconds = payload.upTimeStamp / 1000;
+void calcUptime(uint32_t ms, uint32_t *hh, uint32_t *mm, uint32_t *ss) {
+	uint32_t totalSeconds = ms / 1000;
 	*hh = totalSeconds / 3600;
 	*mm = (totalSeconds % 3600) / 60;
 	*ss = totalSeconds % 60;

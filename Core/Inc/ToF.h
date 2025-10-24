@@ -47,7 +47,7 @@ typedef struct {
 // ==================== Data Types ====================
 typedef struct {
     double distanceCM;      // Distance in centimeters
-    double upTimeStamp; //timestamp sice boot in hh:mm::ss format
+    uint32_t upTimeStamp; //timestamp sice boot in hh:mm::ss format
 } distanceHandler_t;
 
 // ==================== Public APIs ====================
